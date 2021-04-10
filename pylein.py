@@ -156,4 +156,4 @@ if len(argv) < 2:
 
 init = Pylein()
 
-init.initialize(argv[1])
+init.initialize(argv[1].lower())
