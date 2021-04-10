@@ -19,14 +19,36 @@ from re       import search
 
 website='https://fileinfo.com/extension/{file_format}'
 
+builtin_extensions = {
+    'kalem': ('Kalem Source Code File',
+              'A programming language used for make C++ syntax better. '
+              'Kalem generates C++ source file, C++17 standard required default.'),
+
+    'kedi': ('Kedi Experimental Data Interface',
+             'A data interface that uses categorized single-node tree. '
+             'Left category must be variable initializer, '
+             'right must be child node. Official implementation written in C++.')
+}
+
 class Pylein:
     def __init__(self):
+        self.__is_builtin = False
         self.extension  = ''
         self.info       = ''
         self.data       = ''
 
         self.raw_extension = '<h2><span class="fileType">(.*)</span>(.*)</h2>'
         self.raw_info      = '<div class="infoBox">\n<p>(.*)</p>\n</div>'
+
+    def is_builtin(self) -> bool:
+        if builtin_extensions.get(self.extension, False):
+            self.data = builtin_extensions[self.extension][0]
+            self.info = builtin_extensions[self.extension][1]
+
+            return True
+
+        return False
+
 
     def hmm(self, length: int):
         for i in range(0, length):
@@ -41,26 +63,43 @@ class Pylein:
 
         self.extension = extension
 
-        self.data = get(website.format(file_format=self.extension)).text
+        if self.is_builtin():
+           self.__is_builtin = True
+        else:
+            self.data = get(website.format(file_format=self.extension)).text
 
         self.parse_extension()
 
     def parse_extension(self):
-        data = search(self.raw_extension, self.data)
-        info = search(self.raw_info     , self.data)
+        if not self.__is_builtin:
+            data = search(self.raw_extension, self.data)
+            info = search(self.raw_info     , self.data)
+        else:
+            data = self.data
+            info = self.info
 
         if data and info:
-            print('\033[0;95m'
-                  + data[2]
-                  + '\033[0m',
-                  '\033[0;97m(\033[0;93m'
-                  + self.extension
-                  + '\033[0;97m)',
-                  end='\033[0m\n')
+            if not self.__is_builtin:
+                print('\033[0;95m'
+                    + data[2]
+                    + '\033[0m',
+                    '\033[0;97m(\033[0;93m'
+                    + self.extension
+                    + '\033[0;97m)',
+                    end='\033[0m\n')
+            else:
+                print('\033[0;95m'
+                    + self.data
+                    + '\033[0m',
+                    '\033[0;97m(\033[0;93m'
+                    + self.extension
+                    + '\033[0;97m)',
+                    end='\033[0m\n')
 
             self.hmm(len(data[2]))
 
-            self.info = info[1]
+            if not self.__is_builtin:
+                self.info = info[1]
 
             for line in self.info.split('.  '):
                 if 'href' not in line:
